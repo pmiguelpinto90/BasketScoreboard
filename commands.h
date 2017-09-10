@@ -1,0 +1,16 @@
+#ifndef commands_h
+#define commands_h
+
+enum {
+	SET_POINTS_HOME,
+	SET_POINTS_GUEST,
+	SET_FOULS_HOME,
+	SET_FOULS_GUEST,
+	SET_PERIOD,
+	SET_POSSESSION_HOME,
+	SET_POSSESSION_GUEST,
+	TOGGLE_COUNTER,
+	RESET_COUNTER,
+}
+
+#endif
