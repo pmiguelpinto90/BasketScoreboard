@@ -106,6 +106,13 @@ void decrementPeriod() {
 	}
 }
 
+void clearPossession() {
+	possessionHome = false;
+	possessionVisit = false;
+	updateDisplay();
+	sendCommand(CLEAR_POSSESSION);
+}
+
 void setPossessionHome() {
 	possessionVisit = false;
 	possessionHome = true;

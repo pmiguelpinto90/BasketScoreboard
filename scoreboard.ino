@@ -45,7 +45,7 @@ void setFoulsHome(int fouls) {
 void setFoulsVisit(int fouls) {
 	scoreDisplay.setAt(FOULS_VISIT, fouls);
 	if (fouls > 9)
-		scoreDisplay.insertDot(TEN_VISIT_INDEX);
+		scoreDisplay.insertDot(TEN_VISIT_INDEX); // TODO func setDot at lib shiftdisplay
 	else
 		scoreDisplay.removeDot(TEN_VISIT_INDEX);
 }
@@ -62,6 +62,11 @@ void setPossessionHome() {
 void setPossessionVisit() {
 	scoreDisplay.removeDot(POSSESSION_HOME_INDEX);
 	scoreDisplay.insertDot(POSSESSION_VISIT_INDEX);
+}
+
+void clearPossession() {
+	scoreDisplay.removeDot(POSSESSION_HOME_INDEX);
+	scoreDisplay.removeDot(POSSESSION_VISIT_INDEX);
 }
 
 void receiveEvent(int size) {
@@ -95,35 +100,43 @@ void receiveEvent(int size) {
 		case SET_POSSESSION_VISIT:
 			setPossessionVisit();
 			break;
+		case CLEAR_POSSESSION:
+			clearPossession();
+			break;
 	}
 }
 
 void setup() {
-	counterOn = false;
-	counterReset = true;
+	counterOn, counterReset = false;
 	counterDisplay.set("0000"); // TODO
-	//onReceive(receiveEvent);
+	//onReceive(receiveEvent); // TODO
 }
 
 void loop() {
 	static unsigned long lastTime = 0;
+	static bool counterSet = true;
 
 	unsigned long currTime = millis() / 10;
 
 	if (counterOn && currTime != lastTime) {
 		lastTime = currTime;
-		// TODO
+		counterSet = false;
+		// TODO update counterDisplay
 	}
 
-	if (counterReset) {
-		// TODO
-		/*if (counterOn) {
-			counterOn = false;
+	if (counterReset) { // button pressed
+		if (counterSet) {
+			// iterate counter time
+			/*counter = (counter + 1) % sizeof(COUNTERS); //TODO sizeof
 			int minutes = COUNTERS[counter];
-			counterDisplay.set();
+			counterDisplay.set();*/
 		} else {
-			counter = (counter + 1) % sizeof(COUNTERS); //TODO sizeof
-
-		}*/
+			// stop and reset counter
+			counterOn = false;
+			counterSet = true;
+			/*int minutes = COUNTERS[counter];
+			counterDisplay.set();*/
+		}
+		counterReset = false;
 	}
 }
