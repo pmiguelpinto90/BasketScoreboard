@@ -9,11 +9,14 @@ const int DEFAULT_FOULS = 0;
 const int MIN_PERIOD = 0;
 const int MAX_PERIOD = 9;
 const int DEFAULT_PERIOD = 1;
+const bool DEFAULT_POSSESSION = false;
 
-volatile int pointsHome, pointsGuest;
-volatile int foulsHome, foulsGuest;
+volatile int pointsHome, pointsVisit;
+volatile int foulsHome, foulsVisit;
+volatile bool possessionHome, possessionVisit;
 volatile int period;
-volatile bool possessionHome;
+
+volatile bool foobarButtonPressed;
 
 void updateDisplay() {
 	// TODO
@@ -31,73 +34,107 @@ void incrementPointsHome() {
 	}
 }
 
-void incrementPointsGuest() {
-	if (pointsGuest < MAX_POINTS)
-		pointsGuest++;
+void incrementPointsVisit() {
+	if (pointsVisit < MAX_POINTS) {
+		pointsVisit++;
+		updateDisplay();
+		sendCommand(SET_POINTS_VISIT , pointsVisit);
+	}
 }
 
 void decrementPointsHome() {
-	if (pointsHome > MIN_POINTS)
+	if (pointsHome > MIN_POINTS) {
 		pointsHome--;
+		updateDisplay();
+		sendCommand(SET_POINTS_HOME, pointsHome);
+	}
 }
 
-void decrementPointsGuest() {
-	if (pointsGuest > MIN_POINTS)
-		pointsGuest--;
+void decrementPointsVisit() {
+	if (pointsVisit > MIN_POINTS) {
+		pointsVisit--;
+		updateDisplay();
+		sendCommand(SET_POINTS_VISIT, pointsVisit);
+	}
 }
 
 void incrementFoulsHome() {
-	if (foulsHome < MAX_FOULS)
+	if (foulsHome < MAX_FOULS) {
 		foulsHome++;
+		updateDisplay();
+		sendCommand(SET_FOULS_HOME, foulsHome);
+	}
 }
 
-void incrementFoulsGuest() {
-	if (foulsGuest < MAX_FOULS)
-		foulsGuest++;
+void incrementFoulsVisit() {
+	if (foulsVisit < MAX_FOULS) {
+		foulsVisit++;
+		updateDisplay();
+		sendCommand(SET_FOULS_VISIT, foulsVisit);
+	}
 }
 
 void decrementFoulsHome() {
-	if (foulsHome > MIN_FOULS)
+	if (foulsHome > MIN_FOULS) {
 		foulsHome--;
+		updateDisplay();
+		sendCommand(SET_FOULS_HOME, foulsHome);
+	}
 }
 
-void decrementFoulsGuest() {
-	if (foulsGuest > MIN_FOULS)
-		foulsGuest--;
+void decrementFoulsVisit() {
+	if (foulsVisit > MIN_FOULS) {
+		foulsVisit--;
+		updateDisplay();
+		sendCommand(SET_FOULS_VISIT, foulsVisit);
+	}
 }
 
 void incrementPeriod() {
-	if (period < MAX_PERIOD)
+	if (period < MAX_PERIOD) {
 		period++;
+		updateDisplay();
+		sendCommand(SET_PERIOD, period);
+	}
 }
 
 void decrementPeriod() {
-	if (period > MIN_PERIOD)
+	if (period > MIN_PERIOD) {
 		period--;
-}
-
-void togglePossession() {
-	possessionHome = !possessionHome;
+		updateDisplay();
+		sendCommand(SET_PERIOD, period);
+	}
 }
 
 void setPossessionHome() {
+	possessionVisit = false;
 	possessionHome = true;
+	updateDisplay();
+	sendCommand(SET_POSSESSION_HOME);
 }
 
-void setPossessionGuest() {
+void setPossessionVisit() {
 	possessionHome = false;
+	possessionVisit = true;
+	updateDisplay();
+	sendCommand(SET_POSSESSION_VISIT);
 }
 
 void setup() {
-	pointsHome, pointsGuest = DEFAULT_POINTS;
-	foulsHome, foulsGuest = DEFAULT_FOULS;
+	pointsHome, pointsVisit = DEFAULT_POINTS;
+	foulsHome, foulsVisit = DEFAULT_FOULS;
 	period = DEFAULT_PERIOD;
-	possessionHome = true;
+	possessionHome, possessionVisit = DEFAULT_POSSESSION;
+
+	foobarButtonPressed = false;
 	// attachInterrupt();
 }
 
 void loop() {
-	// static int pointsHome = DEFAULT_POINTS;
-	//if button
-	//incrementfoo
+	//static int pointsHome = DEFAULT_POINTS;
+	
+	if (foobarButtonPressed) {
+		incrementPointsHome();
+		foobarButtonPressed = false;
+	}
 }
