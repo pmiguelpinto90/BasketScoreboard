@@ -1,10 +1,10 @@
 #include "commands.h"
 
 const int MIN_POINTS = 0;
-const int MAX_POINTS = 99;
+const int MAX_POINTS = 199;
 const int DEFAULT_POINTS = 0;
 const int MIN_FOULS = 0;
-const int MAX_FOULS = 19;
+const int MAX_FOULS = 9;
 const int DEFAULT_FOULS = 0;
 const int MIN_PERIOD = 0;
 const int MAX_PERIOD = 9;
