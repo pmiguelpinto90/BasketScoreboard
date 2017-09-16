@@ -26,25 +26,23 @@ ShiftDisplay counterDisplay(DISPLAY_TYPE, COUNTER_DISPLAY_SIZE);
 ShiftDisplay scoreDisplay(DISPLAY_TYPE, SCORE_SECTION_COUNT, SCORE_SECTION_SIZES);
 
 void setPointsHome(int points) {
-	scoreDisplay.setAt(SECTION_POINTS_HOME, points);
-	if (possessionHome)
-		scoreDisplay.setDotAt(SECTION_POINTS_HOME, 0, true); // set home possession symbol
+	scoreDisplay.setAt(SECTION_POINTS_HOME, points); // only the least 2 significant digits will be set
+	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 1, points > 99); // character '1' is connected as the dot in home points index 1
+	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 0, possessionHome); // home possession symbol is connected as the dot in home points index 0
 }
 
 void setPointsVisit(int points) {
-	scoreDisplay.setAt(SECTION_POINTS_VISIT, points);
-	if (possessionVisit)
-		scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 0, true); // set visit possession symbol
+	scoreDisplay.setAt(SECTION_POINTS_VISIT, points); // only the least 2 significant digits will be set
+	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 1, points > 99); // character '1' is connected as the dot in visit points index 1
+	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 0, possessionVisit); // visit possession symbol is connected as the dot in visit points index 0
 }
 
 void setFoulsHome(int fouls) {
-	scoreDisplay.setAt(SECTION_FOULS_HOME, fouls); // only the least significant digit will be set
-	scoreDisplay.setDotAt(SECTION_FOULS_HOME, 0, fouls > 9); // character '1' is connected as being the dot in home fouls
+	scoreDisplay.setAt(SECTION_FOULS_HOME, fouls);
 }
 
 void setFoulsVisit(int fouls) {
-	scoreDisplay.setAt(SECTION_FOULS_VISIT, fouls); // only the least significant digit will be set
-	scoreDisplay.setDotAt(SECTION_FOULS_VISIT, 0, fouls > 9); // character '1' is connected as being the dot in visit fouls
+	scoreDisplay.setAt(SECTION_FOULS_VISIT, fouls);
 }
 
 void setPeriod(int period) {
@@ -127,7 +125,7 @@ void loop() {
 	if (counterOn && currTime != lastTime) {
 		counter--;
 		if (counter == 0) {
-			counterDisplay.set(" 000");
+			counterDisplay.set("0000");
 			counterOn = false;
 		} else if (counter < 10) {
 			//TODO
