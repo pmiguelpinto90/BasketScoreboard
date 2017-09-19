@@ -13,9 +13,9 @@ enum sections {
 	SECTION_FOULS_VISIT,
 };
 
-const int TIMERS_COUNT = 2;
-const int TIMERS[] = {5, 8}; // in minutes
-const int DEFAULT_TIMER_ID = 0;
+const int MIN_TIMER = 1; // in minutes
+const int MAX_TIMER = 20; // in minutes
+const int DEFAULT_TIMER = 12; // in minutes
 
 volatile bool timerOn;
 volatile bool buttonTimerReset;
@@ -115,14 +115,13 @@ void setup() {
 }
 
 void loop() {
-	static int timerId = DEFAULT_TIMER_ID;
-	static long timer = TIMERS[timerId] * 60 * 100; 
+	static long timer = DEFAULT_TIMER * 60 * 100; // in hundreths of a second
 	static bool timerSet = true;
-	static unsigned long lastTime = 0;
+	static unsigned long lastUpdate = 0;
 
-	unsigned long currTime = millis() / 10;
+	unsigned long thisUpdate = millis() / 10;
 
-	if (timerOn && currTime != lastTime) {
+	if (timerOn && thisUpdate != lastUpdate) {
 		timer--;
 		if (timer == 0) {
 			timerDisplay.set("0000");
@@ -145,14 +144,15 @@ void loop() {
 		}
 
 		timerSet = false;
-		lastTime = currTime;
+		lastUpdate = thisUpdate;
 	}
 
 	if (buttonTimerReset) { // button pressed
 		if (timerSet) {
 			// iterate timer setting
-			timerId = (timerId + 1) % TIMERS_COUNT;
-			int minutes = TIMERS[timerId];
+			timer++;
+			if (timer == MAX_TIMER)
+				timer = MIN_TIMER;
 			//TODO
 			timerDisplay.set();
 		} else {
