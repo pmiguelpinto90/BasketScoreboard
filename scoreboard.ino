@@ -1,11 +1,11 @@
 #include <ShiftDisplay.h>
 #include "commands.h"
 
-const int DISPLAY_TYPE = INDIVIDUAL_ANODE; // TODO in lib
-const int COUNTER_DISPLAY_SIZE = 4;
+const int DISPLAY_TYPE = INDIVIDUAL_ANODE;
+const int TIMER_DISPLAY_SIZE = 4;
 const int SCORE_SECTION_COUNT = 5;
 const int SCORE_SECTION_SIZES[] = {2, 1, 2, 1, 1};
-enum sections { // TODO
+enum sections {
 	SECTION_POINTS_HOME,
 	SECTION_PERIOD,
 	SECTION_POINTS_VISIT,
@@ -13,16 +13,16 @@ enum sections { // TODO
 	SECTION_FOULS_VISIT,
 };
 
-const int COUNTERS_COUNT = 2;
-const int COUNTERS[] = {5, 8}; // in minutes
-const int DEFAULT_COUNTER_ID = 0;
+const int TIMERS_COUNT = 2;
+const int TIMERS[] = {5, 8}; // in minutes
+const int DEFAULT_TIMER_ID = 0;
 
-volatile bool counterOn;
-volatile bool buttonCounterReset;
+volatile bool timerOn;
+volatile bool buttonTimerReset;
 volatile bool possessionHome;
 volatile bool possessionVisit;
 
-ShiftDisplay counterDisplay(DISPLAY_TYPE, COUNTER_DISPLAY_SIZE);
+ShiftDisplay timerDisplay(DISPLAY_TYPE, TIMER_DISPLAY_SIZE);
 ShiftDisplay scoreDisplay(DISPLAY_TYPE, SCORE_SECTION_COUNT, SCORE_SECTION_SIZES);
 
 void setPointsHome(int points) {
@@ -74,11 +74,11 @@ void receiveEvent(int size) {
 	int cmd = 0; //read(); // TODO
 	int arg = 0; //size > 1 ? read() : 0; // TODO
 	switch (cmd) {
-		case TOGGLE_COUNTER:
-			counterOn = !counterOn;
+		case TOGGLE_TIMER:
+			timerOn = !timerOn;
 			break;
-		case RESET_COUNTER:
-			buttonCounterReset = true;
+		case RESET_TIMER:
+			buttonTimerReset = true;
 			break;
 		case SET_POINTS_HOME:
 			setPointsHome(arg);
@@ -108,61 +108,61 @@ void receiveEvent(int size) {
 }
 
 void setup() {
-	counterOn, buttonCounterReset = false;
+	timerOn, buttonTimerReset = false;
 	possessionHome, possessionVisit = false;
-	counterDisplay.set("0000"); // TODO
+	timerDisplay.set("0000"); // TODO
 	//onReceive(receiveEvent); // TODO
 }
 
 void loop() {
-	static int counterId = DEFAULT_COUNTER_ID;
-	static long counter = COUNTERS[counterId] * 60 * 100; 
-	static bool counterSet = true;
+	static int timerId = DEFAULT_TIMER_ID;
+	static long timer = TIMERS[timerId] * 60 * 100; 
+	static bool timerSet = true;
 	static unsigned long lastTime = 0;
 
 	unsigned long currTime = millis() / 10;
 
-	if (counterOn && currTime != lastTime) {
-		counter--;
-		if (counter == 0) {
-			counterDisplay.set("0000");
-			counterOn = false;
-		} else if (counter < 10) {
+	if (timerOn && currTime != lastTime) {
+		timer--;
+		if (timer == 0) {
+			timerDisplay.set("0000");
+			timerOn = false;
+		} else if (timer < 10) {
 			//TODO
-			counterDisplay.set();
-		} else if (counter < 100) {
+			timerDisplay.set();
+		} else if (timer < 100) {
 			//TODO
-			counterDisplay.set();
-		} else if (counter < 6000) {
+			timerDisplay.set();
+		} else if (timer < 6000) {
 			//TODO
-			counterDisplay.set();
+			timerDisplay.set();
 		} else {
-			int seconds = counter / 100;
+			int seconds = timer / 100;
 			int min = seconds / 60;
 			int sec = seconds % 60;
 			//TODO
-			counterDisplay.set();
+			timerDisplay.set();
 		}
 
-		counterSet = false;
+		timerSet = false;
 		lastTime = currTime;
 	}
 
-	if (buttonCounterReset) { // button pressed
-		if (counterSet) {
-			// iterate counter time
-			counterId = (counterId + 1) % COUNTERS_COUNT;
-			int minutes = COUNTERS[counterId];
+	if (buttonTimerReset) { // button pressed
+		if (timerSet) {
+			// iterate timer setting
+			timerId = (timerId + 1) % TIMERS_COUNT;
+			int minutes = TIMERS[timerId];
 			//TODO
-			counterDisplay.set();
+			timerDisplay.set();
 		} else {
-			// stop and reset counter
-			counterOn = false;
-			counterSet = true;
-			int minutes = COUNTERS[counterId];
+			// stop and reset timer
+			timerOn = false;
+			timerSet = true;
+			int minutes = TIMERS[timerId];
 			//TODO
-			counterDisplay.set();
+			timerDisplay.set();
 		}
-		buttonCounterReset = false;
+		buttonTimerReset = false;
 	}
 }
