@@ -13,28 +13,40 @@ enum sections {
 	SECTION_FOULS_VISIT,
 };
 
+const int DEFAULT_POINTS = 0;
+const int DEFAULT_FOULS = 0;
+const int DEFAULT_PERIOD = 0;
+const int DEFAULT_TIMER = 12; // in minutes
 const int MIN_TIMER = 1; // in minutes
 const int MAX_TIMER = 20; // in minutes
-const int DEFAULT_TIMER = 12; // in minutes
+
+const int BUZZER_PIN = 2;
+const int BUZZ_TIME = 3000; // in milliseconds
 
 volatile bool timerOn;
-volatile bool buttonTimerReset;
+volatile bool resetTimer;
 volatile bool possessionHome;
 volatile bool possessionVisit;
 
 ShiftDisplay timerDisplay(DISPLAY_TYPE, TIMER_DISPLAY_SIZE);
 ShiftDisplay scoreDisplay(DISPLAY_TYPE, SCORE_SECTION_COUNT, SCORE_SECTION_SIZES);
 
+void buzz() {
+	digitalWrite(BUZZER_PIN, HIGH);
+	delay(BUZZ_TIME);
+	digitalWrite(BUZZER_PIN, LOW);
+}
+
 void setPointsHome(int points) {
 	scoreDisplay.setAt(SECTION_POINTS_HOME, points); // only the least 2 significant digits will be set
-	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 1, points > 99); // character '1' is connected as the dot in home points index 1
-	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 0, possessionHome); // home possession symbol is connected as the dot in home points index 0
+	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 0, points > 99); // character '1' is connected as the dot in home points index 0
+	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 1, possessionHome); // home possession symbol is connected as the dot in home points index 1
 }
 
 void setPointsVisit(int points) {
 	scoreDisplay.setAt(SECTION_POINTS_VISIT, points); // only the least 2 significant digits will be set
-	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 1, points > 99); // character '1' is connected as the dot in visit points index 1
-	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 0, possessionVisit); // visit possession symbol is connected as the dot in visit points index 0
+	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 0, points > 99); // character '1' is connected as the dot in visit points index 0
+	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 1, possessionVisit); // visit possession symbol is connected as the dot in visit points index 1
 }
 
 void setFoulsHome(int fouls) {
@@ -50,24 +62,33 @@ void setPeriod(int period) {
 }
 
 void setPossessionHome() {
-	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 0, false);
-	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 0, true);
+	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 1, false);
+	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 1, true);
 	possessionVisit = false;
 	possessionHome = true;
 }
 
 void setPossessionVisit() {
-	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 0, false);
-	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 0, true);
+	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 1, false);
+	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 1, true);
 	possessionHome = false;
 	possessionVisit = true;
 }
 
 void clearPossession() {
-	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 0, false);
-	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 0, false);
+	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 1, false);
+	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 1, false);
 	possessionHome = false;
 	possessionVisit = false;
+}
+
+void setTimer(int left, int right) {
+	int n = left * 100 + right;
+	timerDisplay.set(n);
+}
+
+void setTimer(int left) {
+	setTimer(left, 0);
 }
 
 void receiveEvent(int size) {
@@ -78,7 +99,7 @@ void receiveEvent(int size) {
 			timerOn = !timerOn;
 			break;
 		case RESET_TIMER:
-			buttonTimerReset = true;
+			resetTimer = true;
 			break;
 		case SET_POINTS_HOME:
 			setPointsHome(arg);
@@ -108,61 +129,69 @@ void receiveEvent(int size) {
 }
 
 void setup() {
-	timerOn, buttonTimerReset = false;
-	possessionHome, possessionVisit = false;
-	timerDisplay.set("0000"); // TODO
+	// initialize display values
+	setPointsHome(DEFAULT_POINTS);
+	setPointsVisit(DEFAULT_POINTS);
+	setFoulsHome(DEFAULT_FOULS);
+	setFoulsVisit(DEFAULT_FOULS);
+	setPeriod(DEFAULT_PERIOD);
+	setTimer(DEFAULT_TIMER);
+
 	//onReceive(receiveEvent); // TODO
 }
 
 void loop() {
-	static long timer = DEFAULT_TIMER * 60 * 100; // in hundreths of a second
+	static int timerSetting = DEFAULT_TIMER;
 	static bool timerSet = true;
-	static unsigned long lastUpdate = 0;
+	static unsigned long prevHundreths = 0;
+	static long t = timerSetting * 60 * 100; // in hundreths of a second
 
-	unsigned long thisUpdate = millis() / 10;
+	unsigned long hundreths = millis() / 10;
 
-	if (timerOn && thisUpdate != lastUpdate) {
-		timer--;
-		if (timer == 0) {
-			timerDisplay.set("0000");
-			timerOn = false;
-		} else if (timer < 10) {
-			//TODO
-			timerDisplay.set();
-		} else if (timer < 100) {
-			//TODO
-			timerDisplay.set();
-		} else if (timer < 6000) {
-			//TODO
-			timerDisplay.set();
-		} else {
-			int seconds = timer / 100;
-			int min = seconds / 60;
-			int sec = seconds % 60;
-			//TODO
-			timerDisplay.set();
-		}
+	// timer on and ticking
+	if (timerOn && hundreths != prevHundreths) {
 
+		// update timer
+		t--;
+		prevHundreths = hundreths;
 		timerSet = false;
-		lastUpdate = thisUpdate;
+
+		// update display
+		if (t >= 6000) { // one minute
+			int min = t / 6000;
+			int sec = t % 6000;
+			setTimer(min, sec);
+		} else if (t > 0) {
+			int sec = t / 100;
+			int hund = t % 100;
+			setTimer(sec, hund);
+		} else { // zero
+			timerOn = false; // stop
+			setTimer(0);
+			buzz();
+		}
 	}
 
-	if (buttonTimerReset) { // button pressed
+	// button pressed
+	if (resetTimer) {
 		if (timerSet) {
+
 			// iterate timer setting
-			timer++;
-			if (timer == MAX_TIMER)
-				timer = MIN_TIMER;
-			//TODO
-			timerDisplay.set();
+			timerSetting++;
+			if (timerSetting == MAX_TIMER)
+				timerSetting = MIN_TIMER;
 		} else {
+
 			// stop and reset timer
 			timerOn = false;
 			timerSet = true;
-			int minutes = TIMERS[timerId];
-			//TODO
-			timerDisplay.set();
 		}
-		buttonTimerReset = false;
+
+		// update timer and display
+		t = timerSetting * 60 * 100;
+		setTimer(timerSetting);
+
+		// clear button
+		resetTimer = false;
 	}
 }
