@@ -1,6 +1,13 @@
 #include <ShiftDisplay.h>
 #include "commands.h"
 
+const int TIMER_LATCH_PIN = 1;
+const int TIMER_CLOCK_PIN = 1;
+const int TIMER_DATA_PIN = 1;
+const int SCORE_LATCH_PIN = 1;
+const int SCORE_CLOCK_PIN = 1;
+const int SCORE_DATA_PIN = 1;
+
 const DisplayType DISPLAY_TYPE = INDIVIDUAL_ANODE;
 const int TIMER_DISPLAY_SIZE = 4;
 const int SCORE_SECTION_COUNT = 5;
@@ -28,8 +35,8 @@ volatile bool resetTimer;
 volatile bool possessionHome;
 volatile bool possessionVisit;
 
-ShiftDisplay timerDisplay(DISPLAY_TYPE, TIMER_DISPLAY_SIZE);
-ShiftDisplay scoreDisplay(DISPLAY_TYPE, SCORE_SECTION_COUNT, SCORE_SECTION_SIZES);
+ShiftDisplay timerDisplay(TIMER_LATCH_PIN, TIMER_CLOCK_PIN, TIMER_DATA_PIN, DISPLAY_TYPE, TIMER_DISPLAY_SIZE);
+ShiftDisplay scoreDisplay(SCORE_LATCH_PIN, SCORE_CLOCK_PIN, SCORE_DATA_PIN, DISPLAY_TYPE, SCORE_SECTION_COUNT, SCORE_SECTION_SIZES);
 
 void setPointsHome(int points) {
 	scoreDisplay.setAt(SECTION_POINTS_HOME, points); // only the least 2 significant digits will be set
