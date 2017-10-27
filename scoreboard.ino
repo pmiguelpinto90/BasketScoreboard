@@ -1,7 +1,7 @@
 #include <ShiftDisplay.h>
 #include "commands.h"
 
-const int DISPLAY_TYPE = INDIVIDUAL_ANODE;
+const DisplayType DISPLAY_TYPE = INDIVIDUAL_ANODE;
 const int TIMER_DISPLAY_SIZE = 4;
 const int SCORE_SECTION_COUNT = 5;
 const int SCORE_SECTION_SIZES[] = {2, 1, 2, 1, 1};
@@ -20,8 +20,8 @@ const int DEFAULT_TIMER = 12; // in minutes
 const int MIN_TIMER = 1; // in minutes
 const int MAX_TIMER = 20; // in minutes
 
-const int BUZZER_PIN = 2;
-const int BUZZ_TIME = 3000; // in milliseconds
+const int BUZZER_PIN = 2; // TODO
+const int BUZZ_TIME = 3000; // in milliseconds // TODO
 
 volatile bool timerOn;
 volatile bool resetTimer;
@@ -31,39 +31,39 @@ volatile bool possessionVisit;
 ShiftDisplay timerDisplay(DISPLAY_TYPE, TIMER_DISPLAY_SIZE);
 ShiftDisplay scoreDisplay(DISPLAY_TYPE, SCORE_SECTION_COUNT, SCORE_SECTION_SIZES);
 
-void buzz() {
-	digitalWrite(BUZZER_PIN, HIGH);
-	delay(BUZZ_TIME);
-	digitalWrite(BUZZER_PIN, LOW);
-}
-
 void setPointsHome(int points) {
 	scoreDisplay.setAt(SECTION_POINTS_HOME, points); // only the least 2 significant digits will be set
 	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 0, points > 99); // character '1' is connected as the dot in home points index 0
 	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 1, possessionHome); // home possession symbol is connected as the dot in home points index 1
+	scoreDisplay.show();
 }
 
 void setPointsVisit(int points) {
 	scoreDisplay.setAt(SECTION_POINTS_VISIT, points); // only the least 2 significant digits will be set
 	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 0, points > 99); // character '1' is connected as the dot in visit points index 0
 	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 1, possessionVisit); // visit possession symbol is connected as the dot in visit points index 1
+	scoreDisplay.show();
 }
 
 void setFoulsHome(int fouls) {
 	scoreDisplay.setAt(SECTION_FOULS_HOME, fouls);
+	scoreDisplay.show();
 }
 
 void setFoulsVisit(int fouls) {
 	scoreDisplay.setAt(SECTION_FOULS_VISIT, fouls);
+	scoreDisplay.show();
 }
 
 void setPeriod(int period) {
 	scoreDisplay.setAt(SECTION_PERIOD, period);
+	scoreDisplay.show();
 }
 
 void setPossessionHome() {
 	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 1, false);
 	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 1, true);
+	scoreDisplay.show();
 	possessionVisit = false;
 	possessionHome = true;
 }
@@ -71,6 +71,7 @@ void setPossessionHome() {
 void setPossessionVisit() {
 	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 1, false);
 	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 1, true);
+	scoreDisplay.show();
 	possessionHome = false;
 	possessionVisit = true;
 }
@@ -78,6 +79,7 @@ void setPossessionVisit() {
 void clearPossession() {
 	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 1, false);
 	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 1, false);
+	scoreDisplay.show();
 	possessionHome = false;
 	possessionVisit = false;
 }
@@ -85,15 +87,22 @@ void clearPossession() {
 void setTimer(int left, int right) {
 	int n = left * 100 + right;
 	timerDisplay.set(n);
+	timerDisplay.show();
 }
 
 void setTimer(int left) {
 	setTimer(left, 0);
 }
 
+void buzz() { // TODO
+	digitalWrite(BUZZER_PIN, HIGH);
+	delay(BUZZ_TIME);
+	digitalWrite(BUZZER_PIN, LOW);
+}
+
 void receiveEvent(int size) {
-	int cmd = 0; //read(); // TODO
-	int arg = 0; //size > 1 ? read() : 0; // TODO
+	Command cmd = /*read()*/NULL; // TODO
+	int arg = size > 1 ? /*read()*/0 : 0; // TODO
 	switch (cmd) {
 		case TOGGLE_TIMER:
 			timerOn = !timerOn;
@@ -125,6 +134,9 @@ void receiveEvent(int size) {
 		case CLEAR_POSSESSION:
 			clearPossession();
 			break;
+		case BUZZ:
+			buzz();
+			break;
 	}
 }
 
@@ -144,7 +156,7 @@ void loop() {
 	static int timerSetting = DEFAULT_TIMER;
 	static bool timerSet = true;
 	static unsigned long prevHundreths = 0;
-	static long t = timerSetting * 60 * 100; // in hundreths of a second
+	static long t = timerSetting * 6000; // in hundreths of a second
 
 	unsigned long hundreths = millis() / 10;
 
@@ -188,10 +200,10 @@ void loop() {
 		}
 
 		// update timer and display
-		t = timerSetting * 60 * 100;
+		t = timerSetting * 6000;
 		setTimer(timerSetting);
 
-		// clear button
+		// clear button pressed
 		resetTimer = false;
 	}
 }
