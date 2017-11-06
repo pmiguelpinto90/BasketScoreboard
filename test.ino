@@ -7,7 +7,7 @@ const int SCORE_LATCH_PIN = 1;
 const int SCORE_CLOCK_PIN = 1;
 const int SCORE_DATA_PIN = 1;
 
-const DisplayType DISPLAY_TYPE = INDIVIDUAL_ANODE;
+const DisplayType DISPLAY_TYPE = INDIVIDUAL_CATHODE;
 const int TIMER_DISPLAY_SIZE = 4;
 const int SCORE_SECTION_COUNT = 5;
 const int SCORE_SECTION_SIZES[] = {2, 1, 2, 1, 1};
