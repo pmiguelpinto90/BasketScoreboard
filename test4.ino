@@ -12,41 +12,45 @@ ShiftDisplay display(LATCH_PIN, CLOCK_PIN, DATA_PIN, DISPLAY_TYPE, DISPLAY_SIZE)
 void setTimer(int left, int right) {
 	int n = left * 100 + right;
 	display.set(n);
-	display.show();
+	display.show(); // display.update();
 }
 
 void setup() {
 	setTimer(12, 34);
-	delay(3000);
+	delay(2000);
 }
 
 void loop() {
-	static unsigned long prevHundreths = 0;
-	static long t = 90000L; // in hundreths of a second
+	static unsigned long prevTick = 0;
+	static long prevSeconds = 0;
+	static long hundreths = (2*60 + 30) * 100; // timer value in hundreths of a second
 	static bool timerOn = true;
 
-	unsigned long hundreths = millis() / 10;
+	unsigned long tick = millis() / 10; // in hundreths of a second
 
 	// ticking
-	if (timerOn && hundreths != prevHundreths) {
+	if (timerOn && tick != prevTick) {
 
 		// update timer
-		t--;
-		prevHundreths = hundreths;
+		hundreths--;
+		int seconds = hundreths / 100;
 
 		// update display
-		if (t >= 6000) { // one minute
-			int min = t / 6000;
-			int sec = t % 6000;
+		if (seconds >= 60 && seconds != prevSeconds) { // greater or equal one minute
+			int min = seconds / 60;
+			int sec = seconds % 60;
 			setTimer(min, sec);
-		} else if (t > 0) {
-			int sec = t / 100;
-			int hund = t % 100;
+			prevSeconds = seconds;
+		} else if (hundreths > 0) { // less than one minute
+			int sec = seconds;
+			int hund = hundreths % 100;
 			setTimer(sec, hund);
 		} else { // zero
 			timerOn = false; // stop
 			setTimer(0, 0);
 		}
+
+		prevTick = tick;
 	}
 
 }
