@@ -11,6 +11,7 @@ const DisplayType DISPLAY_TYPE = INDIVIDUAL_CATHODE;
 const int TIMER_DISPLAY_SIZE = 4;
 const int SCORE_SECTION_COUNT = 5;
 const int SCORE_SECTION_SIZES[] = {2, 1, 2, 1, 1};
+
 enum sections {
 	SECTION_POINTS_HOME,
 	SECTION_PERIOD,
@@ -22,9 +23,7 @@ enum sections {
 const int DEFAULT_POINTS = 0;
 const int DEFAULT_FOULS = 0;
 const int DEFAULT_PERIOD = 0;
-const int DEFAULT_TIMER = 12; // in minutes
-const int MIN_TIMER = 1; // in minutes
-const int MAX_TIMER = 20; // in minutes
+const int DEFAULT_TIMER = 2; // in minutes
 
 volatile bool possessionHome;
 volatile bool possessionVisit;
@@ -85,30 +84,97 @@ void clearPossession() {
 	possessionVisit = false;
 }
 
-void setTimer(int left, int right) {
+void setTimer(int left, int right, bool sep) {
 	int n = left * 100 + right;
 	timerDisplay.set(n);
+	timerDisplay.setDot(1, sep); // separator connected as dot at index 1 of timer display
 	timerDisplay.show(); // display.update();
 }
 
 void setTimer(int left) {
-	setTimer(left, 0);
+	setTimer(left, 0, true);
 }
 
 void setup() {
-	// initialize display values
+
+	for (int i = 0; i <= 9; i++) {
+		setPointsHome(i);
+		delay(400);
+	}
+	for (int i = 19; i <= 99; i += 10) {
+		setPointsHome(i);
+		delay(400);
+	}
+	setPointsHome(199);
+	delay(400);
 	setPointsHome(DEFAULT_POINTS);
+
+	for (int i = 0; i <= 9; i++) {
+		setPointsVisit(i);
+		delay(400);
+	}
+	for (int i = 19; i <= 99; i += 10) {
+		setPointsVisit(i);
+		delay(400);
+	}
+	setPointsVisit(199);
+	delay(400);
 	setPointsVisit(DEFAULT_POINTS);
+
+	for (int i = 0; i <= 9; i++) {
+		setFoulsHome(i);
+		delay(400);
+	}
 	setFoulsHome(DEFAULT_FOULS);
+
+	for (int i = 0; i <= 9; i++) {
+		setFoulsVisit(i);
+		delay(400);
+	}
 	setFoulsVisit(DEFAULT_FOULS);
-	setPeriod(DEFAULT_PERIOD);
+
+	for (int i = 0; i <= 9; i++) {
+		setPeriod(i);
+		delay(400);
+	}
+	setPeriod(DEFAULT_FOULS);
+
+	for (int i = 0; i <= 9; i++) {
+		setTimer(0, i, true);
+		delay(400);
+	}
+	for (int i = 19; i <= 99; i += 10) {
+		setTimer(0, i, true);
+		delay(400);
+	}
+	for (int i = 0; i <= 9; i++) {
+		setTimer(i, 99, true);
+		delay(400);
+	}
+	for (int i = 19; i <= 99; i += 10) {
+		setTimer(i, 99, true);
+		delay(400);
+	}
 	setTimer(DEFAULT_TIMER);
+
+	setPossessionHome();
+	delay(400);
+	setPossessionVisit();
+	delay(400);
+	clearPossession();
+	delay(400);
+	setPossessionVisit();
+	delay(400);
+	setPossessionHome();
+	delay(400);
+	clearPossession();
+	delay(400);
 }
 
 void loop() {
 	static unsigned long prevTick = 0;
 	static long prevSeconds = 0;
-	static long hundreths = (2*60 + 30) * 100; // timer value in hundreths of a second
+	static long hundreths = DEFAULT_TIMER * 60 * 100; // timer value in hundreths of a second
 	static bool timerOn = true;
 
 	unsigned long tick = millis() / 10; // in hundreths of a second
@@ -121,15 +187,17 @@ void loop() {
 		int seconds = hundreths / 100;
 
 		// update display
-		if (seconds >= 60 && seconds != prevSeconds) { // greater or equal one minute
-			int min = seconds / 60;
-			int sec = seconds % 60;
-			setTimer(min, sec);
-			prevSeconds = seconds;
+		if (seconds >= 60) { // greater or equal one minute
+			if (seconds != prevSeconds) {
+				int mins = seconds / 60;
+				int secs = seconds % 60;
+				setTimer(mins, secs, true);
+				prevSeconds = seconds;
+			}
 		} else if (hundreths > 0) { // less than one minute
-			int sec = seconds;
-			int hund = hundreths % 100;
-			setTimer(sec, hund);
+			int secs = seconds;
+			int hunds = hundreths % 100;
+			setTimer(secs, hunds, true);
 		} else { // zero
 			timerOn = false; // stop
 			setTimer(0);
