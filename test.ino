@@ -7,18 +7,25 @@ const int SCORE_LATCH_PIN = 1;
 const int SCORE_CLOCK_PIN = 1;
 const int SCORE_DATA_PIN = 1;
 
-const DisplayType DISPLAY_TYPE = INDIVIDUAL_CATHODE;
-const int TIMER_DISPLAY_SIZE = 4;
+const DisplayType DISPLAY_TYPE = COMMON_CATHODE;
+const DisplayDrive DISPLAY_DRIVE = STATIC_DRIVE;
+
+const int TIMER_SECTION_COUNT = 2;
+const int TIMER_SECTION_SIZES[] = {2, 2};
+enum timerSections {SECTION_LEFT, SECTION_RIGHT};
+const int SEPARATOR_INDEX = 1;
+
 const int SCORE_SECTION_COUNT = 5;
 const int SCORE_SECTION_SIZES[] = {2, 1, 2, 1, 1};
-
-enum sections {
+enum scoreSections {
 	SECTION_POINTS_HOME,
 	SECTION_PERIOD,
 	SECTION_POINTS_VISIT,
 	SECTION_FOULS_HOME,
-	SECTION_FOULS_VISIT,
+	SECTION_FOULS_VISIT
 };
+const int POSSESSION_INDEX = 1; // inside SECTION_POINTS_*
+const int HUNDRED_INDEX = 0; // inside SECTION_POINTS_*
 
 const int DEFAULT_POINTS = 0;
 const int DEFAULT_FOULS = 0;
@@ -28,67 +35,72 @@ const int DEFAULT_TIMER = 2; // in minutes
 volatile bool possessionHome;
 volatile bool possessionVisit;
 
-ShiftDisplay timerDisplay(TIMER_LATCH_PIN, TIMER_CLOCK_PIN, TIMER_DATA_PIN, DISPLAY_TYPE, TIMER_DISPLAY_SIZE);
-ShiftDisplay scoreDisplay(SCORE_LATCH_PIN, SCORE_CLOCK_PIN, SCORE_DATA_PIN, DISPLAY_TYPE, SCORE_SECTION_COUNT, SCORE_SECTION_SIZES);
+ShiftDisplay timerDisplay(TIMER_LATCH_PIN, TIMER_CLOCK_PIN, TIMER_DATA_PIN, DISPLAY_TYPE, TIMER_SECTION_COUNT, TIMER_SECTION_SIZES, DISPLAY_DRIVE);
+ShiftDisplay scoreDisplay(SCORE_LATCH_PIN, SCORE_CLOCK_PIN, SCORE_DATA_PIN, DISPLAY_TYPE, SCORE_SECTION_COUNT, SCORE_SECTION_SIZES, DISPLAY_DRIVE);
 
 void setPointsHome(int points) {
-	scoreDisplay.setAt(SECTION_POINTS_HOME, points); // only the least 2 significant digits will be set
-	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 0, points > 99); // character '1' is connected as the dot in home points index 0
-	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 1, possessionHome); // home possession symbol is connected as the dot in home points index 1
-	scoreDisplay.show();
+	scoreDisplay.setAt(SECTION_POINTS_HOME, points); // only the 2 least significant digits will be set
+	if (points > 99)
+		scoreDisplay.setDotAt(SECTION_POINTS_HOME, HUNDRED_INDEX); // character '1' is connected as dot
+	if (possessionHome)
+		scoreDisplay.setDotAt(SECTION_POINTS_HOME, POSSESSION_INDEX); // set home possession symbol because it was cleared
+	scoreDisplay.update();
 }
 
 void setPointsVisit(int points) {
-	scoreDisplay.setAt(SECTION_POINTS_VISIT, points); // only the least 2 significant digits will be set
-	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 0, points > 99); // character '1' is connected as the dot in visit points index 0
-	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 1, possessionVisit); // visit possession symbol is connected as the dot in visit points index 1
-	scoreDisplay.show();
+	scoreDisplay.setAt(SECTION_POINTS_VISIT, points); // only the 2 least significant digits will be set
+	if (points > 99)
+		scoreDisplay.setDotAt(SECTION_POINTS_VISIT, HUNDRED_INDEX); // character '1' is connected as dot
+	if (possessionVisit)
+		scoreDisplay.setDotAt(SECTION_POINTS_VISIT, POSSESSION_INDEX); // set visit possession symbol because it was cleared
+	scoreDisplay.update();
 }
 
 void setFoulsHome(int fouls) {
 	scoreDisplay.setAt(SECTION_FOULS_HOME, fouls);
-	scoreDisplay.show();
+	scoreDisplay.update();
 }
 
 void setFoulsVisit(int fouls) {
 	scoreDisplay.setAt(SECTION_FOULS_VISIT, fouls);
-	scoreDisplay.show();
+	scoreDisplay.update();
 }
 
 void setPeriod(int period) {
 	scoreDisplay.setAt(SECTION_PERIOD, period);
-	scoreDisplay.show();
+	scoreDisplay.update();
 }
 
 void setPossessionHome() {
-	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 1, false);
-	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 1, true);
-	scoreDisplay.show();
-	possessionVisit = false;
+	scoreDisplay.setDotAt(SECTION_POINTS_HOME, POSSESSION_INDEX); // possession symbols are connected as dots
+	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, POSSESSION_INDEX, false);
+	scoreDisplay.update();
 	possessionHome = true;
+	possessionVisit = false;
 }
 
 void setPossessionVisit() {
-	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 1, false);
-	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 1, true);
-	scoreDisplay.show();
-	possessionHome = false;
+	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, POSSESSION_INDEX); // possession symbols are connected as dots
+	scoreDisplay.setDotAt(SECTION_POINTS_HOME, POSSESSION_INDEX, false);
+	scoreDisplay.update();
 	possessionVisit = true;
+	possessionHome = false;
 }
 
 void clearPossession() {
-	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 1, false);
-	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 1, false);
-	scoreDisplay.show();
+	scoreDisplay.setDotAt(SECTION_POINTS_HOME, POSSESSION_INDEX, false); // possession symbols are connected as dots
+	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, POSSESSION_INDEX, false);
+	scoreDisplay.update();
 	possessionHome = false;
 	possessionVisit = false;
 }
 
 void setTimer(int left, int right, bool sep) {
-	int n = left * 100 + right;
-	timerDisplay.set(n);
-	timerDisplay.setDot(1, sep); // separator connected as dot at index 1 of timer display
-	timerDisplay.show(); // display.update();
+	timerDisplay.setAt(SECTION_LEFT, left);
+	timerDisplay.setAt(SECTION_RIGHT, right, true); // show leading zeros
+	if (sep)
+		timerDisplay.setDot(SEPARATOR_INDEX); // separator is connected as dot
+	timerDisplay.update();
 }
 
 void setTimer(int left) {
