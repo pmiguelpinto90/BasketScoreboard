@@ -109,7 +109,7 @@ void buzz() { // TODO
 
 void receiveEvent(int size) {
 	Command cmd = /*read()*/NULL; // TODO
-	int arg = size > 1 ? /*read()*/0 : 0; // TODO
+	int param = size > 1 ? /*read()*/0 : 0; // TODO
 	switch (cmd) {
 		case TOGGLE_TIMER:
 			timerOn = !timerOn;
@@ -118,19 +118,19 @@ void receiveEvent(int size) {
 			resetTimer = true;
 			break;
 		case SET_POINTS_HOME:
-			setPointsHome(arg);
+			setPointsHome(param);
 			break;
 		case SET_POINTS_VISIT:
-			setPointsVisit(arg);
+			setPointsVisit(param);
 			break;
 		case SET_FOULS_HOME:
-			setFoulsHome(arg);
+			setFoulsHome(param);
 			break;
 		case SET_FOULS_VISIT:
-			setFoulsVisit(arg);
+			setFoulsVisit(param);
 			break;
 		case SET_PERIOD:
-			setPeriod(arg);
+			setPeriod(param);
 			break;
 		case SET_POSSESSION_HOME:
 			setPossessionHome();
