@@ -1,136 +1,133 @@
 #include <ShiftDisplay.h>
 #include "commands.h"
 
-const int TIMER_LATCH_PIN = 1;
-const int TIMER_CLOCK_PIN = 1;
-const int TIMER_DATA_PIN = 1;
-const int SCORE_LATCH_PIN = 1;
-const int SCORE_CLOCK_PIN = 1;
-const int SCORE_DATA_PIN = 1;
+const int TIMER_LATCH_PIN = 5;
+const int TIMER_CLOCK_PIN = 6;
+const int TIMER_DATA_PIN = 7;
+const int SCORE_LATCH_PIN = 8;
+const int SCORE_CLOCK_PIN = 9;
+const int SCORE_DATA_PIN = 10;
 
-const DisplayType DISPLAY_TYPE = INDIVIDUAL_CATHODE;
-const int TIMER_DISPLAY_SIZE = 4;
-const int SCORE_SECTION_COUNT = 5;
-const int SCORE_SECTION_SIZES[] = {2, 1, 2, 1, 1};
-enum sections {
+const DisplayType DISPLAY_TYPE = COMMON_CATHODE;
+const DisplayDrive DISPLAY_DRIVE = STATIC_DRIVE;
+
+const int TIMER_SECTION_SIZES[] = {2, 2, 0};
+enum timerSections {SECTION_LEFT, SECTION_RIGHT};
+const int SEPARATOR_INDEX = 1;
+
+const int SCORE_SECTION_SIZES[] = {2, 1, 2, 1, 1, 0};
+enum scoreSections {
 	SECTION_POINTS_HOME,
 	SECTION_PERIOD,
 	SECTION_POINTS_VISIT,
 	SECTION_FOULS_HOME,
 	SECTION_FOULS_VISIT,
 };
+const int POSSESSION_INDEX = 1; // inside SECTION_POINTS_*
+const int HUNDRED_INDEX = 0; // inside SECTION_POINTS_*
 
 const int DEFAULT_POINTS = 0;
 const int DEFAULT_FOULS = 0;
 const int DEFAULT_PERIOD = 0;
-const int DEFAULT_TIMER = 12; // in minutes
-const int MIN_TIMER = 1; // in minutes
-const int MAX_TIMER = 20; // in minutes
+const int DEFAULT_TIMER = 0;
 
 const int BUZZER_PIN = 2; // TODO
 const int BUZZ_TIME = 3000; // in milliseconds // TODO
 
-volatile bool timerOn;
-volatile bool resetTimer;
 volatile bool possessionHome;
 volatile bool possessionVisit;
+volatile bool buzzReq;
 
-ShiftDisplay timerDisplay(TIMER_LATCH_PIN, TIMER_CLOCK_PIN, TIMER_DATA_PIN, DISPLAY_TYPE, TIMER_DISPLAY_SIZE);
-ShiftDisplay scoreDisplay(SCORE_LATCH_PIN, SCORE_CLOCK_PIN, SCORE_DATA_PIN, DISPLAY_TYPE, SCORE_SECTION_COUNT, SCORE_SECTION_SIZES);
+ShiftDisplay timerDisplay(TIMER_LATCH_PIN, TIMER_CLOCK_PIN, TIMER_DATA_PIN, DISPLAY_TYPE, TIMER_SECTION_SIZES, DISPLAY_DRIVE);
+ShiftDisplay scoreDisplay(SCORE_LATCH_PIN, SCORE_CLOCK_PIN, SCORE_DATA_PIN, DISPLAY_TYPE, SCORE_SECTION_SIZES, DISPLAY_DRIVE);
 
 void setPointsHome(int points) {
-	scoreDisplay.setAt(SECTION_POINTS_HOME, points); // only the least 2 significant digits will be set
-	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 0, points > 99); // character '1' is connected as the dot in home points index 0
-	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 1, possessionHome); // home possession symbol is connected as the dot in home points index 1
-	scoreDisplay.show();
+	scoreDisplay.setAt(SECTION_POINTS_HOME, points); // only the 2 least significant digits will be set
+	if (points > 99)
+		scoreDisplay.setDotAt(SECTION_POINTS_HOME, HUNDRED_INDEX); // character '1' is connected as dot
+	if (possessionHome)
+		scoreDisplay.setDotAt(SECTION_POINTS_HOME, POSSESSION_INDEX); // set home possession symbol because it was cleared
+	scoreDisplay.update();
 }
 
 void setPointsVisit(int points) {
-	scoreDisplay.setAt(SECTION_POINTS_VISIT, points); // only the least 2 significant digits will be set
-	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 0, points > 99); // character '1' is connected as the dot in visit points index 0
-	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 1, possessionVisit); // visit possession symbol is connected as the dot in visit points index 1
-	scoreDisplay.show();
+	scoreDisplay.setAt(SECTION_POINTS_VISIT, points); // only the 2 least significant digits will be set
+	if (points > 99)
+		scoreDisplay.setDotAt(SECTION_POINTS_VISIT, HUNDRED_INDEX); // character '1' is connected as dot
+	if (possessionVisit)
+		scoreDisplay.setDotAt(SECTION_POINTS_VISIT, POSSESSION_INDEX); // set visit possession symbol because it was cleared
+	scoreDisplay.update();
 }
 
 void setFoulsHome(int fouls) {
 	scoreDisplay.setAt(SECTION_FOULS_HOME, fouls);
-	scoreDisplay.show();
+	scoreDisplay.update();
 }
 
 void setFoulsVisit(int fouls) {
 	scoreDisplay.setAt(SECTION_FOULS_VISIT, fouls);
-	scoreDisplay.show();
+	scoreDisplay.update();
 }
 
 void setPeriod(int period) {
 	scoreDisplay.setAt(SECTION_PERIOD, period);
-	scoreDisplay.show();
+	scoreDisplay.update();
 }
 
 void setPossessionHome() {
-	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 1, false);
-	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 1, true);
-	scoreDisplay.show();
-	possessionVisit = false;
+	scoreDisplay.setDotAt(SECTION_POINTS_HOME, POSSESSION_INDEX); // possession symbols are connected as dots
+	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, POSSESSION_INDEX, false);
+	scoreDisplay.update();
 	possessionHome = true;
+	possessionVisit = false;
 }
 
 void setPossessionVisit() {
-	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 1, false);
-	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 1, true);
-	scoreDisplay.show();
-	possessionHome = false;
+	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, POSSESSION_INDEX); // possession symbols are connected as dots
+	scoreDisplay.setDotAt(SECTION_POINTS_HOME, POSSESSION_INDEX, false);
+	scoreDisplay.update();
 	possessionVisit = true;
+	possessionHome = false;
 }
 
 void clearPossession() {
-	scoreDisplay.setDotAt(SECTION_POINTS_HOME, 1, false);
-	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, 1, false);
-	scoreDisplay.show();
+	scoreDisplay.setDotAt(SECTION_POINTS_HOME, POSSESSION_INDEX, false); // possession symbols are connected as dots
+	scoreDisplay.setDotAt(SECTION_POINTS_VISIT, POSSESSION_INDEX, false);
+	scoreDisplay.update();
 	possessionHome = false;
 	possessionVisit = false;
 }
 
-void setTimer(int left, int right) {
-	int n = left * 100 + right;
-	timerDisplay.set(n);
-	timerDisplay.show();
-}
-
-void setTimer(int left) {
-	setTimer(left, 0);
-}
-
-void buzz() { // TODO
-	digitalWrite(BUZZER_PIN, HIGH);
-	delay(BUZZ_TIME);
-	digitalWrite(BUZZER_PIN, LOW);
+void setTimer(int left, int right, bool sep) {
+	timerDisplay.setAt(SECTION_LEFT, left);
+	timerDisplay.setAt(SECTION_RIGHT, right, true); // show leading zeros
+	if (sep)
+		timerDisplay.setDot(SEPARATOR_INDEX); // separator is connected as dot
+	timerDisplay.update();
 }
 
 void receiveEvent(int size) {
 	Command cmd = /*read()*/NULL; // TODO
-	int param = size > 1 ? /*read()*/0 : 0; // TODO
+	int param1 = size > 1 ? /*read()*/0 : 0; // TODO
+	int param2 = size > 2 ? /*read()*/0 : 0; // TODO
 	switch (cmd) {
-		case TOGGLE_TIMER:
-			timerOn = !timerOn;
-			break;
-		case RESET_TIMER:
-			resetTimer = true;
+		case SET_TIMER:
+			setTimer(param1, param2, true); // TODO
 			break;
 		case SET_POINTS_HOME:
-			setPointsHome(param);
+			setPointsHome(param1);
 			break;
 		case SET_POINTS_VISIT:
-			setPointsVisit(param);
+			setPointsVisit(param1);
 			break;
 		case SET_FOULS_HOME:
-			setFoulsHome(param);
+			setFoulsHome(param1);
 			break;
 		case SET_FOULS_VISIT:
-			setFoulsVisit(param);
+			setFoulsVisit(param1);
 			break;
 		case SET_PERIOD:
-			setPeriod(param);
+			setPeriod(param1);
 			break;
 		case SET_POSSESSION_HOME:
 			setPossessionHome();
@@ -142,75 +139,31 @@ void receiveEvent(int size) {
 			clearPossession();
 			break;
 		case BUZZ:
-			buzz();
+			buzzReq = true;
 			break;
 	}
 }
 
 void setup() {
+	possessionHome = possessionVisit = buzzReq = false;
+
 	// initialize display values
+	setTimer(DEFAULT_TIMER, DEFAULT_TIMER, false); // TODO
 	setPointsHome(DEFAULT_POINTS);
 	setPointsVisit(DEFAULT_POINTS);
 	setFoulsHome(DEFAULT_FOULS);
 	setFoulsVisit(DEFAULT_FOULS);
 	setPeriod(DEFAULT_PERIOD);
-	setTimer(DEFAULT_TIMER);
+	clearPossession();
 
 	//onReceive(receiveEvent); // TODO
 }
 
 void loop() {
-	static int timerSetting = DEFAULT_TIMER;
-	static bool timerSet = true;
-	static unsigned long prevHundreths = 0;
-	static long t = timerSetting * 6000; // in hundreths of a second
-
-	unsigned long hundreths = millis() / 10;
-
-	// timer on and ticking
-	if (timerOn && hundreths != prevHundreths) {
-
-		// update timer
-		t--;
-		prevHundreths = hundreths;
-		timerSet = false;
-
-		// update display
-		if (t >= 6000) { // one minute
-			int min = t / 6000;
-			int sec = t % 6000;
-			setTimer(min, sec);
-		} else if (t > 0) {
-			int sec = t / 100;
-			int hund = t % 100;
-			setTimer(sec, hund);
-		} else { // zero
-			timerOn = false; // stop
-			setTimer(0);
-			buzz();
-		}
-	}
-
-	// button pressed
-	if (resetTimer) {
-		if (timerSet) {
-
-			// iterate timer setting
-			timerSetting++;
-			if (timerSetting == MAX_TIMER)
-				timerSetting = MIN_TIMER;
-		} else {
-
-			// stop and reset timer
-			timerOn = false;
-			timerSet = true;
-		}
-
-		// update timer and display
-		t = timerSetting * 6000;
-		setTimer(timerSetting);
-
-		// clear button pressed
-		resetTimer = false;
+	if (buzzReq) {
+		digitalWrite(BUZZER_PIN, HIGH); // TODO
+		delay(BUZZ_TIME);
+		digitalWrite(BUZZER_PIN, LOW);
+		buzzReq = false;
 	}
 }
