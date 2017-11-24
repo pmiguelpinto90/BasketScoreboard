@@ -145,7 +145,7 @@ void receiveEvent(int size) {
 }
 
 void setup() {
-	possessionHome = possessionVisit = buzzReq = false;
+	possessionHome, possessionVisit, buzzReq = false;
 
 	// initialize display values
 	setTimer(DEFAULT_TIMER, DEFAULT_TIMER, false); // TODO
